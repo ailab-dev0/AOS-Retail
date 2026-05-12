@@ -7,19 +7,35 @@ import entriesJson from '@/data/entries.json';
 import type { Entry } from '@/data/types';
 
 const ALL = entriesJson as Entry[];
-const PAGE_TITLES: Record<string, string> = { '/': 'Dashboard', '/entries': 'Entries', '/approvals': 'Approvals', '/reports': 'Reports', '/settings': 'Settings' };
-const PAGE_BREADCRUMBS: Record<string, string> = { '/': 'AOS Retail', '/entries': 'AOS Retail / Entries', '/approvals': 'AOS Retail / Approvals', '/reports': 'AOS Retail / Reports', '/settings': 'AOS Retail / Settings' };
+
+const PAGE_META: Record<string, { title: string; breadcrumb: string }> = {
+  '/':           { title: 'Dashboard',  breadcrumb: 'AOS Retail' },
+  '/entries':    { title: 'Entries',    breadcrumb: 'AOS Retail / Entries' },
+  '/approvals':  { title: 'Approvals',  breadcrumb: 'AOS Retail / Approvals' },
+  '/reports':    { title: 'Reports',    breadcrumb: 'AOS Retail / Reports' },
+  '/settings':   { title: 'Settings',   breadcrumb: 'AOS Retail / Settings' },
+};
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const pendingCount = ALL.filter((e: Entry) => e.approvalStatus === 'Pending').length;
+  const meta = PAGE_META[pathname] ?? { title: 'AOS Dashboard', breadcrumb: 'AOS Retail' };
+
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(c => !c)} pendingCount={pendingCount} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Topbar title={PAGE_TITLES[pathname] ?? 'AOS Dashboard'} breadcrumb={PAGE_BREADCRUMBS[pathname]} />
-        <main className="flex-1 overflow-y-auto p-6 bg-[#f0f2f5]">{children}</main>
+    <div className="flex h-screen overflow-hidden bg-[#f0f2f5]">
+      <Sidebar
+        collapsed={collapsed}
+        onToggle={() => setCollapsed(c => !c)}
+        pendingCount={pendingCount}
+      />
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <Topbar title={meta.title} breadcrumb={meta.breadcrumb} />
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-5 animate-fade-in-up">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );

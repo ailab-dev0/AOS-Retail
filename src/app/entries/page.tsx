@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import entriesJson from '@/data/entries.json';
 import type { Entry } from '@/data/types';
 import { Search, ChevronLeft, ChevronRight, X, ChevronUp, ChevronDown } from 'lucide-react';
@@ -31,7 +32,8 @@ function formatDate(s: string) {
 type SortKey = 'SPOC_name' | 'date' | 'totalHours' | 'approvalStatus' | null;
 
 export default function EntriesPage() {
-  const [search, setSearch]   = useState('');
+  const params = useSearchParams();
+  const [search, setSearch]   = useState(params.get('search') ?? '');
   const [cat, setCat]         = useState('All');
   const [status, setStatus]   = useState('All');
   const [page, setPage]       = useState(1);

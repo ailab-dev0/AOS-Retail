@@ -72,6 +72,19 @@ export function getSubjectDistribution(): { subject: string; count: number }[] {
   return Object.entries(m).map(([subject, count]) => ({ subject, count })).sort((a, b) => b.count - a.count).slice(0, 8);
 }
 
+export function getCategoryByMonth(): { month: string; f2f: number; online: number; mentoring: number; other: number }[] {
+  return MONTHS.map(m => {
+    const es = ALL.filter(e => monthOf(e.date) === m);
+    return {
+      month: m,
+      f2f:       es.filter(e => e.category === 'Face to Face class').length,
+      online:    es.filter(e => e.category === 'Online class').length,
+      mentoring: es.filter(e => e.category === 'Mentoring').length,
+      other:     es.filter(e => e.category === 'Other academic work').length,
+    };
+  });
+}
+
 export function getRecentActivity(n = 8): Entry[] {
   return [...ALL].sort((a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime()).slice(0, n);
 }

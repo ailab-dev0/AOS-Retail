@@ -2,11 +2,28 @@
 import { useState, useMemo } from 'react';
 import entriesJson from '@/data/entries.json';
 import type { Entry, MonthStats } from '@/data/types';
-import EntriesLineChart from '@/components/charts/EntriesLineChart';
 import CategoryBarChart from '@/components/charts/CategoryBarChart';
 import FacultyBarChart from '@/components/charts/FacultyBarChart';
 import SubjectPieChart from '@/components/charts/SubjectPieChart';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Download, BarChart2, TrendingUp, Users, BookOpen } from 'lucide-react';
+
+function MonthlyLineChart({ data }: { data: MonthStats[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={220}>
+      <LineChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+        <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+        <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+        <Tooltip contentStyle={{ background: '#0f172a', border: 'none', borderRadius: 10, fontSize: 12, color: '#fff', padding: '8px 12px' }} />
+        <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
+        <Line type="monotone" dataKey="count"    name="Total"    stroke="#2563eb" strokeWidth={2.5} dot={{ r: 3, fill: '#2563eb', strokeWidth: 0 }} activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }} />
+        <Line type="monotone" dataKey="approved" name="Approved" stroke="#10b981" strokeWidth={2} strokeDasharray="5 4" dot={false} />
+        <Line type="monotone" dataKey="pending"  name="Pending"  stroke="#f97316" strokeWidth={2} strokeDasharray="5 4" dot={false} />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
 
 const ALL = entriesJson as Entry[];
 const MONTHS = ['Jan','Feb','Mar','Apr','May'];
@@ -72,7 +89,7 @@ export default function ReportsPage() {
       {/* 2x2 chart grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {[
-          { def: CHART_DEFS[0], chart: <EntriesLineChart data={entriesOverTime} /> },
+          { def: CHART_DEFS[0], chart: <MonthlyLineChart data={entriesOverTime} /> },
           { def: CHART_DEFS[1], chart: <CategoryBarChart data={byCategory} /> },
           { def: CHART_DEFS[2], chart: <FacultyBarChart data={byFaculty} /> },
           { def: CHART_DEFS[3], chart: <SubjectPieChart data={bySubject} /> },

@@ -27,15 +27,14 @@ export async function GET(req: NextRequest) {
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-    const querySql = sql as unknown as (q: string, p: unknown[]) => Promise<Record<string, unknown>[]>;
-    const [rows, countResult] = await Promise.all([
-      querySql(`SELECT * FROM entries ${where} ORDER BY created_date DESC NULLS LAST LIMIT $${pi} OFFSET $${pi + 1}`, [...params, limit, offset]),
-      querySql(`SELECT COUNT(*)::int as total FROM entries ${where}`, params),
+    const [dataRows, countRows] = await Promise.all([
+      sql.query(`SELECT * FROM entries ${where} ORDER BY created_date DESC NULLS LAST LIMIT $${pi} OFFSET $${pi + 1}`, [...params, limit, offset]),
+      sql.query(`SELECT COUNT(*)::int as total FROM entries ${where}`, params),
     ]);
 
     return NextResponse.json({
-      data: rows,
-      total: (countResult[0] as { total: number }).total,
+      data: dataRows,
+      total: (countRows[0] as { total: number }).total,
       page,
       limit,
     });

@@ -9,7 +9,7 @@ import {
   PieChart, Pie, Cell as PieCell
 } from 'recharts';
 import {
-  Plus, ArrowUpRight, Pause, Square, Download,
+  Plus, ArrowUpRight, Download,
   CheckCircle, Clock, XCircle, ChevronRight
 } from 'lucide-react';
 
@@ -313,29 +313,6 @@ function RecentEntries({ entries }: { entries: Entry[] }) {
   );
 }
 
-/* ─── Time Tracker ───────────────────────────────────────── */
-function TimeTracker({ totalHours }: { totalHours: string }) {
-  return (
-    <div className="rounded-2xl p-4 text-white overflow-hidden flex flex-col" style={{ background: '#1a5d3a' }}>
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Time Tracker</h3>
-        <Link href="/reports" className="text-[11px] text-white/70 hover:text-white transition-colors">View →</Link>
-      </div>
-      <div className="flex-1 flex flex-col items-center justify-center py-3">
-        <p className="font-mono text-3xl font-bold tracking-widest tabular-nums">{totalHours}</p>
-        <p className="text-[10px] text-white/60 mt-1">Total hours logged</p>
-      </div>
-      <div className="flex items-center justify-center gap-2">
-        <button className="w-8 h-8 rounded-full bg-[#f59e0b] hover:bg-[#d97706] flex items-center justify-center transition-colors">
-          <Pause size={12} />
-        </button>
-        <button className="w-8 h-8 rounded-full bg-[#ef4444] hover:bg-[#dc2626] flex items-center justify-center transition-colors">
-          <Square size={10} />
-        </button>
-      </div>
-    </div>
-  );
-}
 
 type FacultyMember = {
   name: string; initials: string; color: string; task: string;
@@ -466,9 +443,8 @@ export default function DashboardPage() {
             rejected={stats.rejected}
           />
         </div>
-        <div className="lg:col-span-3 flex flex-col gap-4">
+        <div className="lg:col-span-3">
           <RecentEntries entries={recentEntries} />
-          <TimeTracker totalHours={totalHours} />
         </div>
       </div>
 

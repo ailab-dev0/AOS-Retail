@@ -1,9 +1,10 @@
 'use client';
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import type { Entry } from '@/data/types';
-import { fetchEntries, fetchStats } from '@/lib/api';
+import { fetchEntries, fetchStats, bulkApproveEntries } from '@/lib/api';
 import {
   Search, ChevronLeft, ChevronRight, X, ChevronUp, ChevronDown,
   FileText, Filter, CheckCircle, Clock, Trash2, CheckSquare, Square,
@@ -45,6 +46,7 @@ const STAT_THEMES = [
 
 function EntriesPageInner() {
   const params = useSearchParams();
+  const { data: session } = useSession();
   const [search, setSearch]   = useState(params.get('search') ?? '');
   const [cat, setCat]         = useState('All');
   const [status, setStatus]   = useState('All');
@@ -53,6 +55,7 @@ function EntriesPageInner() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const [entries, setEntries]     = useState<Entry[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -73,8 +76,7 @@ function EntriesPageInner() {
       .catch(console.error);
   }, []);
 
-  // Fetch entries when filters or page change
-  useEffect(() => {
+  const loadEntries = () => {
     setLoading(true);
     fetchEntries({ search, category: cat, status, page, limit: PAGE_SIZE })
       .then(res => {
@@ -83,7 +85,28 @@ function EntriesPageInner() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [search, cat, status, page]);
+  };
+
+  // Fetch entries when filters or page change
+  useEffect(() => { loadEntries(); }, [search, cat, status, page]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleBulkAction = async (newStatus: string) => {
+    const approvedBy = session?.user?.name ?? 'Admin';
+    const numericIds = entries
+      .filter(e => selected.has(e.trackingID) && e.id)
+      .map(e => e.id as number);
+    if (!numericIds.length) return;
+    setBulkLoading(true);
+    try {
+      await bulkApproveEntries(numericIds, newStatus, approvedBy);
+      setSelected(new Set());
+      loadEntries();
+    } catch {
+      // silent — API already logs
+    } finally {
+      setBulkLoading(false);
+    }
+  };
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -245,14 +268,26 @@ function EntriesPageInner() {
             <span className="text-sm font-semibold">{selected.size} selected</span>
           </div>
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors">
+            <button
+              onClick={() => handleBulkAction('Approved')}
+              disabled={bulkLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 rounded-lg transition-colors"
+            >
               <CheckCircle size={12} /> Approve
             </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors">
+            <button
+              onClick={() => handleBulkAction('Pending')}
+              disabled={bulkLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 disabled:opacity-60 rounded-lg transition-colors"
+            >
               <Clock size={12} /> Hold
             </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors">
-              <Trash2 size={12} /> Delete
+            <button
+              onClick={() => handleBulkAction('Rejected')}
+              disabled={bulkLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-rose-600 hover:bg-rose-700 disabled:opacity-60 rounded-lg transition-colors"
+            >
+              <Trash2 size={12} /> Reject
             </button>
             <div className="w-px h-4 bg-white/20 mx-1" />
             <button onClick={() => setSelected(new Set())} className="text-xs text-white/70 hover:text-white">Cancel</button>

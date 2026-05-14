@@ -1,17 +1,24 @@
 'use client';
 import React, { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import { fetchStats } from '@/lib/api';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
+    if (pathname === '/login') return;
     fetchStats()
       .then(stats => setPendingCount(stats.pending))
       .catch(console.error);
-  }, []);
+  }, [pathname]);
+
+  if (pathname === '/login') {
+    return <>{children}</>;
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#f5f5f5]">

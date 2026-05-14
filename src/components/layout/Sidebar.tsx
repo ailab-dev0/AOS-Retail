@@ -1,24 +1,23 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import {
-  LayoutDashboard, FileText, CheckCircle, BarChart2, Settings,
-  HelpCircle, LogOut, Users, Download, Table2
+  LayoutDashboard, FileText, CheckSquare, BarChart2, Settings,
+  HelpCircle, LogOut, Table2
 } from 'lucide-react';
 
 const MENU_NAV = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/' },
-  { label: 'Approvals', icon: CheckCircle, href: '/approvals', badge: true },
   { label: 'Entries', icon: FileText, href: '/entries' },
-  { label: 'All Entries', icon: Table2, href: '/users' },
+  { label: 'Approvals', icon: CheckSquare, href: '/approvals', badge: true },
   { label: 'Reports', icon: BarChart2, href: '/reports' },
-  { label: 'Team', icon: Users, href: '/settings' },
+  { label: 'All Entries', icon: Table2, href: '/users' },
 ];
 
 const GENERAL_NAV = [
   { label: 'Settings', icon: Settings, href: '/settings' },
   { label: 'Help', icon: HelpCircle, href: '#' },
-  { label: 'Logout', icon: LogOut, href: '#' },
 ];
 
 interface SidebarProps {
@@ -56,18 +55,15 @@ export default function Sidebar({ pendingCount }: SidebarProps) {
                 relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium
                 transition-colors duration-150 group min-h-[38px]
                 ${active
-                  ? 'bg-[#e8f5e9] text-[#1a5d3a]'
+                  ? 'bg-[#1a5d3a] text-white'
                   : 'text-[#6b7280] hover:text-[#1a1a1a] hover:bg-[#f5f5f5]'
                 }
               `}
             >
-              {active && (
-                <span className="absolute left-0 top-2 bottom-2 w-[3px] bg-[#1a5d3a] rounded-r-full" />
-              )}
               <Icon size={16} className="flex-shrink-0" strokeWidth={active ? 2.5 : 2} />
               <span className="flex-1 truncate">{label}</span>
               {badge && count > 0 && (
-                <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-[#1a5d3a] text-white text-[10px] font-bold rounded-full">
+                <span className={`flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full ${active ? 'bg-white/25 text-white' : 'bg-[#1a5d3a] text-white'}`}>
                   {count > 99 ? '99+' : count}
                 </span>
               )}
@@ -89,9 +85,9 @@ export default function Sidebar({ pendingCount }: SidebarProps) {
               href={href}
               className={`
                 relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium
-                transition-colors duration-150 group min-h-[38px]
+                transition-colors duration-150 min-h-[38px]
                 ${active
-                  ? 'bg-[#e8f5e9] text-[#1a5d3a]'
+                  ? 'bg-[#1a5d3a] text-white'
                   : 'text-[#6b7280] hover:text-[#1a1a1a] hover:bg-[#f5f5f5]'
                 }
               `}
@@ -101,22 +97,24 @@ export default function Sidebar({ pendingCount }: SidebarProps) {
             </Link>
           );
         })}
+        <button
+          onClick={() => signOut({ callbackUrl: '/login' })}
+          className="w-full relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors duration-150 min-h-[38px] text-[#6b7280] hover:text-[#ef4444] hover:bg-[#fee2e2]"
+        >
+          <LogOut size={16} className="flex-shrink-0" strokeWidth={2} />
+          <span className="flex-1 text-left truncate">Logout</span>
+        </button>
       </nav>
 
       <div className="flex-1 min-h-[8px]" />
 
-      {/* Download CTA */}
+      {/* Promo Card */}
       <div className="p-3">
         <div className="rounded-xl bg-[#1a5d3a] p-3 text-white relative overflow-hidden">
           <div className="relative z-10">
-            <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center mb-2">
-              <Download size={12} />
-            </div>
-            <p className="text-xs font-semibold leading-snug">Download our Mobile App</p>
-            <p className="text-[10px] text-white/60 mt-0.5">Get easy in another way</p>
-            <button className="mt-2 w-full py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-[11px] font-semibold transition-colors">
-              Download
-            </button>
+            <p className="text-xs font-semibold leading-snug">AOS Retail Next</p>
+            <p className="text-[10px] text-white/60 mt-0.5">Faculty activity tracking system</p>
+            <span className="mt-2 inline-block px-2 py-0.5 bg-white/20 rounded text-[10px] font-semibold">v2.0</span>
           </div>
           <div className="absolute -bottom-3 -right-3 w-16 h-16 rounded-full bg-white/5" />
           <div className="absolute -top-4 -right-4 w-14 h-14 rounded-full bg-white/5" />

@@ -15,6 +15,10 @@ const PAGE_SIZE = 15;
 const CATEGORIES = ['All', 'Face to Face class', 'Online class', 'Mentoring', 'Other academic work'];
 const STATUSES = ['All', 'Pending', 'Approved', 'Rejected'];
 
+const AVATAR_COLORS = ['#1a5d3a', '#2563eb', '#7c3aed', '#db2777', '#ea580c', '#0891b2'];
+function avatarColor(name: string) { return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length]; }
+function avatarInitials(name: string) { return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(); }
+
 const CAT_PILL: Record<string, string> = {
   'Face to Face class': 'bg-blue-50 text-blue-700 border border-blue-100',
   'Online class': 'bg-emerald-50 text-emerald-700 border border-emerald-100',
@@ -362,9 +366,15 @@ function EntriesPageInner() {
                       <span className="absolute left-0 top-2 bottom-2 w-0.5 bg-[#1a5d3a] rounded-r opacity-0 group-hover:opacity-100 transition-opacity" />
                       AOS-{e.trackingID}
                     </td>
-                    <td className="px-3 py-2.5 font-medium text-[#1a1a1a]">
-                      <button onClick={() => { setSearch(e.SPOC_name); setPage(1); }} className="hover:text-[#1a5d3a] hover:underline text-left">
-                        {e.SPOC_name}
+                    <td className="px-3 py-2.5">
+                      <button onClick={() => { setSearch(e.SPOC_name); setPage(1); }} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0"
+                          style={{ background: avatarColor(e.SPOC_name) }}
+                        >
+                          {avatarInitials(e.SPOC_name)}
+                        </div>
+                        <span className="font-medium text-[#1a1a1a] hover:text-[#1a5d3a] text-sm">{e.SPOC_name}</span>
                       </button>
                     </td>
                     <td className="px-3 py-2.5">

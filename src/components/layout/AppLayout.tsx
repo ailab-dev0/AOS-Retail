@@ -21,7 +21,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f5f5f5]">
+    <div className="flex h-screen overflow-hidden bg-[#fafafa]">
       <Sidebar pendingCount={pendingCount} />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <Topbar />

@@ -7,6 +7,10 @@ import {
   ChevronLeft, ChevronRight, Filter
 } from 'lucide-react';
 
+const AVATAR_COLORS = ['#1a5d3a', '#2563eb', '#7c3aed', '#db2777', '#ea580c', '#0891b2'];
+function avatarColor(name: string) { return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length]; }
+function avatarInitials(name: string) { return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(); }
+
 const CAT_PILL: Record<string, string> = {
   'Face to Face class': 'bg-blue-50 text-blue-700 border border-blue-100',
   'Online class': 'bg-emerald-50 text-emerald-700 border border-emerald-100',
@@ -272,7 +276,17 @@ export default function ApprovalsPage() {
                       </td>
                     )}
                     <td className="px-3 py-2.5 font-mono text-[11px] text-[#9ca3af]">AOS-{e.trackingID}</td>
-                    <td className="px-3 py-2.5 font-medium text-[#1a1a1a]">{e.SPOC_name}</td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0"
+                          style={{ background: avatarColor(e.SPOC_name) }}
+                        >
+                          {avatarInitials(e.SPOC_name)}
+                        </div>
+                        <span className="font-medium text-[#1a1a1a] text-sm">{e.SPOC_name}</span>
+                      </div>
+                    </td>
                     <td className="px-3 py-2.5">
                       <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${CAT_PILL[e.category ?? ''] ?? 'bg-gray-100 text-gray-600'}`}>
                         {CAT_LABEL[e.category ?? ''] ?? e.category ?? '—'}

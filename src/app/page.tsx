@@ -5,9 +5,23 @@ import { fetchStats, fetchEntries } from '@/lib/api';
 import type { Entry } from '@/data/types';
 import EntriesLineChart from '@/components/charts/EntriesLineChart';
 import {
-  Plus, ArrowUpRight, Video, Pause, Square,
-  CheckCircle, Clock, XCircle, Eye, ChevronRight
+  BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell,
+  PieChart, Pie, Cell as PieCell
+} from 'recharts';
+import {
+  Plus, ArrowUpRight, Pause, Square, Download,
+  CheckCircle, Clock, XCircle, ChevronRight
 } from 'lucide-react';
+
+const AVATAR_COLORS = ['#1a5d3a', '#2563eb', '#7c3aed', '#db2777', '#ea580c', '#0891b2'];
+
+function getAvatarColor(name: string) {
+  return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
+}
+
+function getInitials(name: string) {
+  return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+}
 
 /* ─── Animated Counter ───────────────────────────────────── */
 function useAnimatedValue(target: number, duration = 900) {
@@ -25,180 +39,148 @@ function useAnimatedValue(target: number, duration = 900) {
   return val;
 }
 
-/* ─── Stat Card ──────────────────────────────────────────── */
-const THEMES = {
-  green:   { bg: 'bg-[#1a5d3a]',   text: 'text-white', label: 'text-white/80', iconBg: 'bg-white/20', iconText: 'text-white', sub: 'text-white/70' },
-  emerald: { bg: 'bg-[#dcfce7]',   text: 'text-[#166534]', label: 'text-[#166534]/80', iconBg: 'bg-[#166534]/15', iconText: 'text-[#166534]', sub: 'text-[#166534]/70' },
-  amber:   { bg: 'bg-[#fef3c7]',   text: 'text-[#92400e]', label: 'text-[#92400e]/80', iconBg: 'bg-[#92400e]/15', iconText: 'text-[#92400e]', sub: 'text-[#92400e]/70' },
-  rose:    { bg: 'bg-[#fee2e2]',   text: 'text-[#991b1b]', label: 'text-[#991b1b]/80', iconBg: 'bg-[#991b1b]/15', iconText: 'text-[#991b1b]', sub: 'text-[#991b1b]/70' },
-} as const;
-
-type ThemeKey = keyof typeof THEMES;
-
+/* ─── Stat Card (white bg per reference) ─────────────────── */
 function StatCard({
-  label, value, subtitle, icon: Icon, theme = 'green', href,
+  label, value, subtitle, href, negative = false,
 }: {
-  label: string; value: number; subtitle: string;
-  icon: React.ElementType; theme?: ThemeKey; href?: string;
+  label: string; value: number; subtitle: string; href?: string; negative?: boolean;
 }) {
   const anim = useAnimatedValue(value);
-  const t = THEMES[theme];
+  const trendColor = negative ? 'text-[#ef4444]' : 'text-[#1a5d3a]';
+
   const content = (
-    <div className={`relative rounded-xl p-5 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 ${t.bg} ${t.text}`}>
+    <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#f0f0f0] hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
       <div className="flex items-start justify-between">
-        <span className={`text-sm font-semibold ${t.label}`}>{label}</span>
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${t.iconBg}`}>
-          <ArrowUpRight size={16} className={t.iconText} />
+        <span className="text-sm text-[#6b7280] font-medium">{label}</span>
+        <div className="w-7 h-7 rounded-full bg-[#f5f5f5] flex items-center justify-center">
+          <ArrowUpRight size={14} className="text-[#9ca3af]" />
         </div>
       </div>
-      <div className={`text-[52px] font-bold mt-4 tabular-nums leading-none tracking-tight ${t.text}`}>
-        {anim}
-      </div>
-      <div className={`flex items-center gap-1.5 mt-3 text-xs font-semibold ${t.sub}`}>
-        <Icon size={14} />
-        <span>{subtitle}</span>
-      </div>
+      <div className="text-5xl font-bold text-[#1a1a1a] tabular-nums mt-3 leading-none">{anim}</div>
+      <div className={`text-xs font-semibold mt-2 ${trendColor}`}>{subtitle}</div>
     </div>
   );
+
   if (href) return <Link href={href} className="block">{content}</Link>;
   return content;
 }
 
-/* ─── Weekly Analytics Bar Chart ─────────────────────────── */
-function WeeklyAnalytics({ data }: { data: { day: string; value: number; highlighted: boolean }[] }) {
-  const max = Math.max(...data.map(d => d.value), 1);
+/* ─── Entry Analytics (Recharts BarChart) ────────────────── */
+function EntryAnalytics({ data }: { data: { day: string; value: number; highlighted: boolean }[] }) {
   return (
-    <div className="bg-white rounded-xl border border-[#eaeaea] p-4 h-full flex flex-col">
+    <div className="bg-white rounded-2xl border border-[#f0f0f0] shadow-sm p-5 h-full flex flex-col">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[#1a1a1a]">Entry Analytics</h3>
+        <div>
+          <h3 className="text-base font-semibold text-[#1a1a1a]">Entry Analytics</h3>
+          <p className="text-xs text-[#9ca3af] mt-0.5">Weekly distribution of entries</p>
+        </div>
         <Link href="/reports" className="text-[11px] font-semibold text-[#1a5d3a] hover:underline">View Reports →</Link>
       </div>
-      <div className="flex-1 flex items-end justify-between gap-1 mt-3">
-        {data.map((d, i) => (
-          <div key={i} className="flex flex-col items-center gap-1.5 flex-1">
-            <div className="relative w-full flex justify-center">
-              {d.highlighted && (
-                <span className="absolute -top-5 text-[10px] font-bold text-[#1a5d3a] bg-[#e8f5e9] px-1 py-0.5 rounded">
-                  {Math.round((d.value / max) * 100)}%
-                </span>
-              )}
-              <div
-                className={`w-full max-w-[28px] rounded-full transition-all duration-500 ${d.highlighted ? 'bg-[#1a5d3a]' : 'bg-[#e8f5e9]'}`}
-                style={{ height: `${Math.max((d.value / max) * 120, 16)}px` }}
-              />
-            </div>
-            <span className="text-[11px] text-[#9ca3af] font-medium">{d.day}</span>
-          </div>
-        ))}
+      <div className="flex-1 mt-4 min-h-[160px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: -24 }} barCategoryGap="30%">
+            <XAxis
+              dataKey="day"
+              tick={{ fontSize: 11, fill: '#9ca3af' }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              contentStyle={{ background: '#1a1a1a', border: 'none', borderRadius: 8, fontSize: 12, color: '#fff', padding: '6px 10px' }}
+              cursor={{ fill: '#f5f5f5', radius: 4 }}
+            />
+            <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={36}>
+              {data.map((d, i) => (
+                <Cell key={i} fill={d.highlighted ? '#1a5d3a' : '#dcfce7'} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
 }
 
-/* ─── Reminders Card ─────────────────────────────────────── */
-function RemindersCard({ pending }: { pending: Entry[] }) {
-  const next = pending[0];
+/* ─── Pending Review Card ────────────────────────────────── */
+function PendingReviewCard({ pending }: { pending: Entry[] }) {
   return (
-    <div className="bg-white rounded-xl border border-[#eaeaea] p-4 h-full flex flex-col">
+    <div className="bg-white rounded-2xl border border-[#f0f0f0] shadow-sm p-5 h-full flex flex-col">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[#1a1a1a]">Reminders</h3>
-        <Link href="/approvals" className="text-[11px] font-semibold text-[#1a5d3a] hover:underline">See all →</Link>
+        <div>
+          <h3 className="text-base font-semibold text-[#1a1a1a]">Pending Review</h3>
+          <p className="text-xs text-[#9ca3af] mt-0.5">Entries awaiting action</p>
+        </div>
+        <span className="bg-[#fef3c7] text-[#92400e] text-xs font-bold px-2.5 py-0.5 rounded-full">{pending.length}</span>
       </div>
-      {next ? (
-        <>
-          <div className="mt-2">
-            <p className="text-base font-semibold text-[#1a1a1a] leading-snug">
-              Approve entry from {next.SPOC_name}
-            </p>
-            <p className="text-xs text-[#6b7280] mt-1">
-              Subject: {next.subject ?? '—'}
-            </p>
-            <p className="text-[11px] text-[#9ca3af] mt-0.5">
-              Due: {next.date ? new Date(next.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
-            </p>
-          </div>
-          <Link
-            href="/approvals"
-            className="mt-auto flex items-center justify-center gap-2 w-full bg-[#1a5d3a] hover:bg-[#144d30] text-white text-xs font-semibold py-2.5 rounded-xl transition-colors duration-150"
-          >
-            <Video size={14} />
-            Review Approvals
-          </Link>
-        </>
-      ) : (
+
+      {pending.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center">
           <CheckCircle size={28} className="text-[#10b981] mb-1.5" />
           <p className="text-xs text-[#6b7280]">All caught up!</p>
         </div>
+      ) : (
+        <div className="mt-3 space-y-3 flex-1 overflow-auto">
+          {pending.slice(0, 4).map((e) => (
+            <div key={e.trackingID} className="flex items-center gap-3">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                style={{ background: getAvatarColor(e.SPOC_name) }}
+              >
+                {getInitials(e.SPOC_name)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-[#1a1a1a] truncate">{e.SPOC_name}</p>
+                <p className="text-[11px] text-[#9ca3af] truncate">{e.subject ?? '—'}</p>
+              </div>
+              <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                <Link
+                  href="/approvals"
+                  className="text-[11px] font-semibold text-[#1a5d3a] hover:underline"
+                >
+                  Review
+                </Link>
+                {e.date && (
+                  <span className="text-[10px] text-[#9ca3af]">
+                    {new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
-    </div>
-  );
-}
 
-/* ─── Recent Entries List ────────────────────────────────── */
-function RecentEntries({ entries }: { entries: Entry[] }) {
-  const categoryColors: Record<string, string> = {
-    'Face to Face class': '#3b82f6',
-    'Online class': '#10b981',
-    'Mentoring': '#f59e0b',
-    'Other academic work': '#8b5cf6',
-  };
-  return (
-    <div className="bg-white rounded-xl border border-[#eaeaea] p-4 h-full flex flex-col">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[#1a1a1a]">Recent Entries</h3>
-        <Link href="/entries" className="text-[11px] font-semibold text-[#1a5d3a] border border-[#1a5d3a]/20 px-2 py-0.5 rounded-full hover:bg-[#e8f5e9] transition-colors">
-          + New
-        </Link>
-      </div>
-      <div className="mt-2 space-y-2 flex-1 overflow-auto">
-        {entries.slice(0, 5).map((e) => (
-          <Link
-            key={e.trackingID}
-            href={`/entries?search=${encodeURIComponent(e.subject ?? '')}`}
-            className="flex items-center gap-2.5 group"
-          >
-            <div
-              className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: `${categoryColors[e.category ?? ''] || '#6b7280'}15` }}
-            >
-              <div className="w-2 h-2 rounded-full" style={{ background: categoryColors[e.category ?? ''] || '#6b7280' }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-[#1a1a1a] truncate group-hover:text-[#1a5d3a] transition-colors">{e.subject ?? '—'}</p>
-              <p className="text-[11px] text-[#9ca3af]">
-                {e.date ? new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
-              </p>
-            </div>
-            <ChevronRight size={14} className="text-[#d1d5db] group-hover:text-[#1a5d3a] transition-colors" />
-          </Link>
-        ))}
-      </div>
-      <Link href="/entries" className="mt-3 text-center text-[11px] font-semibold text-[#1a5d3a] hover:underline">
-        View all entries →
+      <Link href="/approvals" className="mt-3 text-center text-[11px] font-semibold text-[#1a5d3a] hover:underline">
+        View all →
       </Link>
     </div>
   );
 }
 
-/* ─── Team Collaboration ─────────────────────────────────── */
-function TeamCollaboration({ members }: {
+/* ─── Faculty Activity ───────────────────────────────────── */
+function FacultyActivity({ members }: {
   members: { name: string; initials: string; color: string; task: string; status: 'Completed' | 'In Progress' | 'Pending' }[];
 }) {
   const statusStyles = {
-    Completed: 'bg-[#e8f5e9] text-[#1a5d3a]',
-    'In Progress': 'bg-[#fef3c7] text-[#b45309]',
-    Pending: 'bg-[#fee2e2] text-[#b91c1c]',
+    Completed:     'bg-[#dcfce7] text-[#166534]',
+    'In Progress': 'bg-[#fef3c7] text-[#92400e]',
+    Pending:       'bg-[#fee2e2] text-[#991b1b]',
   };
   return (
-    <div className="bg-white rounded-xl border border-[#eaeaea] p-4 h-full flex flex-col">
+    <div className="bg-white rounded-2xl border border-[#f0f0f0] shadow-sm p-5 h-full flex flex-col">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[#1a1a1a]">Team Collaboration</h3>
-        <Link href="/entries" className="text-[11px] font-semibold text-[#1a5d3a] border border-[#1a5d3a]/20 px-2 py-0.5 rounded-full hover:bg-[#e8f5e9] transition-colors">
+        <div>
+          <h3 className="text-base font-semibold text-[#1a1a1a]">Faculty Activity</h3>
+          <p className="text-xs text-[#9ca3af] mt-0.5">Recent submissions</p>
+        </div>
+        <Link
+          href="/entries"
+          className="text-[11px] font-semibold text-[#1a5d3a] border border-[#1a5d3a]/20 px-2 py-0.5 rounded-full hover:bg-[#e8f5e9] transition-colors"
+        >
           + Add
         </Link>
       </div>
-      <div className="mt-2 space-y-2 flex-1 overflow-auto">
+      <div className="mt-3 space-y-2.5 flex-1 overflow-auto">
         {members.map((m) => (
           <Link
             key={m.name}
@@ -213,11 +195,9 @@ function TeamCollaboration({ members }: {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-[#1a1a1a] group-hover:text-[#1a5d3a] transition-colors">{m.name}</p>
-              <p className="text-[11px] text-[#6b7280] truncate">
-                {m.task}
-              </p>
+              <p className="text-[11px] text-[#6b7280] truncate">Faculty activity</p>
             </div>
-            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap ${statusStyles[m.status]}`}>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${statusStyles[m.status]}`}>
               {m.status}
             </span>
           </Link>
@@ -230,53 +210,102 @@ function TeamCollaboration({ members }: {
   );
 }
 
-/* ─── Approval Gauge ─────────────────────────────────────── */
-function ApprovalGauge({ rate, approved, pending, rejected }: {
+/* ─── Approval Progress (Recharts Donut) ─────────────────── */
+function DonutProgress({ rate, approved, pending, rejected }: {
   rate: number; approved: number; pending: number; rejected: number;
 }) {
   const [anim, setAnim] = useState(0);
   useEffect(() => {
-    const start = performance.now();
-    const step = (now: number) => {
-      const p = Math.min((now - start) / 900, 1);
-      setAnim(Math.round(rate * (1 - Math.pow(1 - p, 3))));
-      if (p < 1) requestAnimationFrame(step);
-    };
-    const id = setTimeout(() => requestAnimationFrame(step), 200);
+    const id = setTimeout(() => setAnim(rate), 300);
     return () => clearTimeout(id);
   }, [rate]);
 
-  const R = 60;
-  const cx = 80;
-  const cy = 80;
-  const circ = Math.PI * R;
-  const filled = (anim / 100) * circ;
+  const donutData = [
+    { value: Math.max(anim, 0), name: 'Approved' },
+    { value: Math.max(100 - anim, 0), name: 'Remaining' },
+  ];
 
   return (
-    <div className="bg-white rounded-xl border border-[#eaeaea] p-4 h-full flex flex-col">
+    <div className="bg-white rounded-2xl border border-[#f0f0f0] shadow-sm p-5 h-full flex flex-col">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[#1a1a1a]">Approval Progress</h3>
+        <div>
+          <h3 className="text-base font-semibold text-[#1a1a1a]">Approval Progress</h3>
+          <p className="text-xs text-[#9ca3af] mt-0.5">Overall approval rate</p>
+        </div>
         <Link href="/approvals" className="text-[11px] font-semibold text-[#1a5d3a] hover:underline">Details →</Link>
       </div>
 
-      <div className="flex-1 flex items-center justify-center mt-1">
-        <svg width={160} height={95} viewBox="0 0 160 95">
-          <path d={`M ${cx - R} ${cy} A ${R} ${R} 0 0 1 ${cx + R} ${cy}`} fill="none" stroke="#f3f4f6" strokeWidth={14} strokeLinecap="round" />
-          <path d={`M ${cx - R} ${cy} A ${R} ${R} 0 0 1 ${cx + R} ${cy}`} fill="none" stroke="#1a5d3a" strokeWidth={14} strokeLinecap="round" strokeDasharray={`${Math.max(filled, anim === 0 ? 0 : 8)} ${circ}`} />
-          <text x={cx} y={cy - 6} textAnchor="middle" fontSize="24" fontWeight="700" fill="#1a1a1a" fontFamily="Inter, sans-serif">{anim}%</text>
-          <text x={cx} y={cy + 10} textAnchor="middle" fontSize="9" fill="#9ca3af" fontFamily="Inter, sans-serif">Overall Rate</text>
-        </svg>
+      <div className="flex-1 flex items-center justify-center relative mt-2">
+        <PieChart width={160} height={160}>
+          <Pie
+            data={donutData}
+            cx={80} cy={80}
+            innerRadius={55} outerRadius={75}
+            startAngle={90} endAngle={-270}
+            dataKey="value"
+            strokeWidth={0}
+          >
+            <PieCell key="approved" fill="#1a5d3a" />
+            <PieCell key="remaining" fill="#f0f0f0" />
+          </Pie>
+        </PieChart>
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <span className="text-2xl font-bold text-[#1a1a1a] tabular-nums">{anim}%</span>
+          <span className="text-[10px] text-[#9ca3af]">Approval Rate</span>
+        </div>
       </div>
 
-      <div className="flex items-center justify-center gap-3 mt-1">
+      <div className="flex flex-col gap-1.5 mt-2">
         {[
-          { label: 'Approved', dot: 'bg-[#1a5d3a]', href: '/approvals' },
-          { label: 'Pending', dot: 'bg-[#9ca3af]', href: '/approvals' },
-          { label: 'Rejected', dot: 'bg-[#ef4444]', href: '/entries?status=Rejected' },
+          { label: 'Approved', count: approved, color: '#1a5d3a' },
+          { label: 'Pending',  count: pending,  color: '#f59e0b' },
+          { label: 'Rejected', count: rejected, color: '#ef4444' },
         ].map(s => (
-          <Link key={s.label} href={s.href} className="flex items-center gap-1 hover:opacity-70 transition-opacity">
-            <div className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
-            <span className="text-[10px] text-[#6b7280]">{s.label}</span>
+          <div key={s.label} className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full" style={{ background: s.color }} />
+              <span className="text-[11px] text-[#6b7280]">{s.label}</span>
+            </div>
+            <span className="text-[11px] font-semibold text-[#1a1a1a] tabular-nums">{s.count}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Recent Entries List ────────────────────────────────── */
+function RecentEntries({ entries }: { entries: Entry[] }) {
+  const categoryColors: Record<string, string> = {
+    'Face to Face class': '#3b82f6',
+    'Online class': '#10b981',
+    'Mentoring': '#f59e0b',
+    'Other academic work': '#8b5cf6',
+  };
+  return (
+    <div className="bg-white rounded-2xl border border-[#f0f0f0] shadow-sm p-4 flex flex-col">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-[#1a1a1a]">Recent Entries</h3>
+        <Link href="/entries" className="text-[11px] font-semibold text-[#1a5d3a] hover:underline">+ New</Link>
+      </div>
+      <div className="mt-2 space-y-2">
+        {entries.slice(0, 3).map((e) => (
+          <Link
+            key={e.trackingID}
+            href={`/entries?search=${encodeURIComponent(e.subject ?? '')}`}
+            className="flex items-center gap-2.5 group"
+          >
+            <div
+              className="w-2 h-2 rounded-full flex-shrink-0"
+              style={{ background: categoryColors[e.category ?? ''] || '#9ca3af' }}
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-[#1a1a1a] truncate group-hover:text-[#1a5d3a] transition-colors">{e.subject ?? '—'}</p>
+              <p className="text-[10px] text-[#9ca3af]">
+                {e.date ? new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+              </p>
+            </div>
+            <ChevronRight size={12} className="text-[#d1d5db] group-hover:text-[#1a5d3a] transition-colors flex-shrink-0" />
           </Link>
         ))}
       </div>
@@ -287,38 +316,24 @@ function ApprovalGauge({ rate, approved, pending, rejected }: {
 /* ─── Time Tracker ───────────────────────────────────────── */
 function TimeTracker({ totalHours }: { totalHours: string }) {
   return (
-    <Link href="/reports" className="block h-full">
-      <div className="relative rounded-xl p-4 h-full text-white overflow-hidden flex flex-col" style={{ background: '#1a5d3a' }}>
-        <div className="absolute inset-0 opacity-10">
-          <svg width="100%" height="100%">
-            <defs>
-              <pattern id="waves" x="0" y="0" width="40" height="20" patternUnits="userSpaceOnUse">
-                <path d="M0 10 Q10 0 20 10 T40 10" fill="none" stroke="white" strokeWidth="1" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#waves)" />
-          </svg>
-        </div>
-
-        <div className="relative z-10 flex flex-col h-full">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold">Time Tracker</h3>
-            <ChevronRight size={14} className="text-white/60" />
-          </div>
-          <div className="flex-1 flex flex-col items-center justify-center">
-            <p className="text-[36px] font-bold tabular-nums tracking-tight">{totalHours}</p>
-          </div>
-          <div className="flex items-center justify-center gap-2 mt-1">
-            <button className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors">
-              <Pause size={14} />
-            </button>
-            <button className="w-9 h-9 rounded-full bg-[#ef4444] hover:bg-[#dc2626] flex items-center justify-center transition-colors">
-              <Square size={12} />
-            </button>
-          </div>
-        </div>
+    <div className="rounded-2xl p-4 text-white overflow-hidden flex flex-col" style={{ background: '#1a5d3a' }}>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold">Time Tracker</h3>
+        <Link href="/reports" className="text-[11px] text-white/70 hover:text-white transition-colors">View →</Link>
       </div>
-    </Link>
+      <div className="flex-1 flex flex-col items-center justify-center py-3">
+        <p className="font-mono text-3xl font-bold tracking-widest tabular-nums">{totalHours}</p>
+        <p className="text-[10px] text-white/60 mt-1">Total hours logged</p>
+      </div>
+      <div className="flex items-center justify-center gap-2">
+        <button className="w-8 h-8 rounded-full bg-[#f59e0b] hover:bg-[#d97706] flex items-center justify-center transition-colors">
+          <Pause size={12} />
+        </button>
+        <button className="w-8 h-8 rounded-full bg-[#ef4444] hover:bg-[#dc2626] flex items-center justify-center transition-colors">
+          <Square size={10} />
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -352,18 +367,17 @@ export default function DashboardPage() {
         approvalRate: statsData.approvalRate,
       });
 
-      // Approximate weekly distribution from total entries
       const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
       const weights = [0.08, 0.16, 0.18, 0.20, 0.18, 0.14, 0.06];
       setWeeklyData(days.map((day, i) => ({
         day,
         value: Math.round(statsData.total * weights[i]),
-        highlighted: i === 2,
+        highlighted: i === 3,
       })));
 
-      setRecentEntries((statsData.recentActivity || []).slice(0, 5));
+      setRecentEntries((statsData.recentActivity || []).slice(0, 3));
 
-      const colors = ['#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6'];
+      const colors = ['#1a5d3a', '#2563eb', '#7c3aed', '#db2777', '#ea580c'];
       const statusPool: FacultyMember['status'][] = ['Completed', 'In Progress', 'Pending', 'In Progress', 'Completed'];
       setFaculty(
         (statsData.hoursByFaculty || []).slice(0, 5).map(
@@ -401,56 +415,72 @@ export default function DashboardPage() {
   if (loading) return <div className="p-8 opacity-50">Loading...</div>;
 
   return (
-    <div className="max-w-[1440px] mx-auto space-y-3">
+    <div className="max-w-[1440px] mx-auto space-y-4">
       {/* Header */}
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#1a1a1a]">Dashboard</h1>
-          <p className="text-xs text-[#6b7280] mt-0.5">
-            Plan, prioritize, and accomplish your tasks with ease.
-          </p>
+          <h1 className="text-2xl font-bold text-[#1a1a1a]">Dashboard</h1>
+          <p className="text-sm text-[#6b7280]">Track, prioritize, and accomplish your tasks with ease.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/entries" className="flex items-center gap-1.5 px-3 py-2 bg-[#1a5d3a] hover:bg-[#144d30] text-white text-xs font-semibold rounded-xl transition-colors">
-            <Plus size={14} /> Add Entry
+          <Link
+            href="/entries"
+            className="bg-[#1a5d3a] hover:bg-[#15492e] text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors flex items-center gap-2"
+          >
+            <Plus size={15} /> Add Entry
           </Link>
-          <button className="flex items-center gap-1.5 px-3 py-2 bg-white border border-[#eaeaea] text-[#1a1a1a] text-xs font-semibold rounded-xl hover:bg-[#f5f5f5] transition-colors">
-            Import Data
+          <button className="border border-[#e5e7eb] hover:bg-[#f9f9f9] text-[#374151] text-sm font-medium px-4 py-2 rounded-xl transition-colors flex items-center gap-2">
+            <Download size={14} /> Import CSV
           </button>
         </div>
       </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="Total Entries" value={stats.total} subtitle="Increased from last month" icon={ArrowUpRight} theme="green" href="/entries" />
-        <StatCard label="Approved Entries" value={stats.approved} subtitle="Increased from last month" icon={CheckCircle} theme="emerald" href="/approvals" />
-        <StatCard label="Pending Entries" value={stats.pending} subtitle="Needs your attention" icon={Clock} theme="amber" href="/approvals" />
-        <StatCard label="Rejected Entries" value={stats.rejected} subtitle="On review" icon={XCircle} theme="rose" href="/entries" />
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label="Total Entries"    value={stats.total}    subtitle="↑ from last month"   href="/entries" />
+        <StatCard label="Approved"         value={stats.approved} subtitle="↑ from last month"   href="/approvals" />
+        <StatCard label="Pending"          value={stats.pending}  subtitle="↓ Needs attention"   href="/approvals" negative />
+        <StatCard label="Rejected"         value={stats.rejected} subtitle="On review"            href="/entries" negative />
       </div>
 
-      {/* Middle Row: Analytics | Reminders | Recent */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
-        <div className="lg:col-span-5"><WeeklyAnalytics data={weeklyData} /></div>
-        <div className="lg:col-span-3"><RemindersCard pending={pendingEntries} /></div>
-        <div className="lg:col-span-4"><RecentEntries entries={recentEntries} /></div>
-      </div>
-
-      {/* Bottom Row: Team | Gauge | Time Tracker */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
-        <div className="lg:col-span-5"><TeamCollaboration members={faculty} /></div>
-        <div className="lg:col-span-3">
-          <ApprovalGauge rate={stats.approvalRate} approved={stats.approved} pending={stats.pending} rejected={stats.rejected} />
+      {/* Middle Row: Analytics (7) + Pending Review (5) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4" style={{ minHeight: 240 }}>
+        <div className="lg:col-span-7">
+          <EntryAnalytics data={weeklyData} />
         </div>
-        <div className="lg:col-span-4"><TimeTracker totalHours={totalHours} /></div>
+        <div className="lg:col-span-5">
+          <PendingReviewCard pending={pendingEntries} />
+        </div>
+      </div>
+
+      {/* Bottom Row: Faculty (5) + Donut (4) + Stacked (3) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4" style={{ minHeight: 280 }}>
+        <div className="lg:col-span-5">
+          <FacultyActivity members={faculty} />
+        </div>
+        <div className="lg:col-span-4">
+          <DonutProgress
+            rate={stats.approvalRate}
+            approved={stats.approved}
+            pending={stats.pending}
+            rejected={stats.rejected}
+          />
+        </div>
+        <div className="lg:col-span-3 flex flex-col gap-4">
+          <RecentEntries entries={recentEntries} />
+          <TimeTracker totalHours={totalHours} />
+        </div>
       </div>
 
       {/* Entries Over Time Chart */}
-      <div className="bg-white rounded-xl border border-[#eaeaea] p-4">
+      <div className="bg-white rounded-2xl border border-[#f0f0f0] shadow-sm p-5">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold text-[#1a1a1a]">Entries Over Time — Jan to May 2026</h3>
+          <div>
+            <h3 className="text-base font-semibold text-[#1a1a1a]">Entries Over Time — Jan to May 2026</h3>
+            <p className="text-xs text-[#9ca3af] mt-0.5">Monthly entry trends</p>
+          </div>
           <div className="flex items-center gap-2">
             <Link href="/reports" className="text-xs font-semibold text-[#1a5d3a] hover:text-[#144d30] transition-colors">Full Reports →</Link>
-            <button className="text-xs font-medium text-[#1a5d3a] hover:text-[#144d30] transition-colors">Export →</button>
           </div>
         </div>
         <EntriesLineChart data={catByMonth} height={200} />

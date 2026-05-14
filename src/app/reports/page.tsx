@@ -113,14 +113,16 @@ export default function ReportsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-white border border-[#eaeaea] rounded-xl px-3 py-2 text-sm">
-            <select value={fromM} onChange={e=>setFromM(e.target.value)} className="bg-transparent text-[#1a1a1a] text-sm focus:outline-none cursor-pointer">
-              {MONTHS.map(m=><option key={m}>{m}</option>)}
-            </select>
-            <span className="text-[#9ca3af] mx-1">→</span>
-            <select value={toM} onChange={e=>setToM(e.target.value)} className="bg-transparent text-[#1a1a1a] text-sm focus:outline-none cursor-pointer">
-              {MONTHS.map(m=><option key={m}>{m}</option>)}
-            </select>
+          <div className="flex items-center gap-1 bg-white border border-[#eaeaea] rounded-xl p-1">
+            {MONTHS.map(m => (
+              <button
+                key={m}
+                onClick={() => { setFromM(m); if (MONTH_NUMS[m] > MONTH_NUMS[toM]) setToM(m); }}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${fromM === m ? 'bg-[#1a5d3a] text-white' : 'text-[#6b7280] hover:bg-[#f5f5f5]'}`}
+              >
+                {m}
+              </button>
+            ))}
           </div>
           <button
             onClick={()=>alert('Export coming soon')}

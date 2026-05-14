@@ -7,10 +7,14 @@ import { Search, ChevronLeft, ChevronRight, AlertCircle, Users } from 'lucide-re
 const STATUS_OPTIONS = ['All', 'Pending', 'Approved', 'Rejected'];
 const PAGE_SIZE = 50;
 
+const AVATAR_COLORS = ['#1a5d3a', '#2563eb', '#7c3aed', '#db2777', '#ea580c', '#0891b2'];
+function avatarColor(name: string) { return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length]; }
+function avatarInitials(name: string) { return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(); }
+
 const STATUS_BADGE: Record<string, string> = {
-  Pending:  'bg-amber-50 text-amber-700 border border-amber-200',
-  Approved: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-  Rejected: 'bg-rose-50 text-rose-700 border border-rose-200',
+  Pending:  'bg-[#fef3c7] text-[#92400e]',
+  Approved: 'bg-[#dcfce7] text-[#166534]',
+  Rejected: 'bg-[#fee2e2] text-[#991b1b]',
 };
 
 const CAT_PILL: Record<string, string> = {
@@ -31,16 +35,16 @@ function formatDate(s: string | null) {
 }
 
 export default function UsersPage() {
-  const [entries, setEntries]         = useState<Entry[]>([]);
-  const [total, setTotal]             = useState(0);
-  const [page, setPage]               = useState(1);
-  const [loading, setLoading]         = useState(true);
-  const [error, setError]             = useState<string | null>(null);
-  const [search, setSearch]           = useState('');
+  const [entries, setEntries]           = useState<Entry[]>([]);
+  const [total, setTotal]               = useState(0);
+  const [page, setPage]                 = useState(1);
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState<string | null>(null);
+  const [search, setSearch]             = useState('');
   const [debouncedSearch, setDebounced] = useState('');
-  const [category, setCategory]       = useState('All');
-  const [status, setStatus]           = useState('All');
-  const [categories, setCategories]   = useState<string[]>(['All']);
+  const [category, setCategory]         = useState('All');
+  const [status, setStatus]             = useState('All');
+  const [categories, setCategories]     = useState<string[]>(['All']);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -70,15 +74,39 @@ export default function UsersPage() {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const start = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const end = Math.min(page * PAGE_SIZE, total);
+  const isFiltered = debouncedSearch || category !== 'All' || status !== 'All';
 
   return (
     <div className="space-y-4 max-w-[1440px] mx-auto">
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-[#1a1a1a]">All Entries</h1>
-        <p className="text-xs text-[#6b7280] mt-0.5">
-          {loading ? 'Loading…' : `${total.toLocaleString()} total entries`}
-        </p>
+      <div className="flex items-end justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1a1a1a]">All Entries</h1>
+          <p className="text-sm text-[#6b7280]">Complete view of all faculty activity records</p>
+        </div>
+      </div>
+
+      {/* Stats bar */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="bg-white rounded-xl border border-[#f0f0f0] shadow-sm px-4 py-2.5 flex items-center gap-2">
+          <Users size={14} className="text-[#9ca3af]" />
+          <span className="text-sm font-semibold text-[#1a1a1a]">{loading ? '…' : total.toLocaleString()}</span>
+          <span className="text-xs text-[#9ca3af]">total entries</span>
+        </div>
+        {isFiltered && !loading && (
+          <div className="bg-[#e8f5e9] rounded-xl border border-[#1a5d3a]/20 px-4 py-2.5 flex items-center gap-2">
+            <span className="text-sm font-semibold text-[#1a5d3a]">{entries.length}</span>
+            <span className="text-xs text-[#1a5d3a]/70">shown (filtered)</span>
+          </div>
+        )}
+        {isFiltered && (
+          <button
+            onClick={() => { setSearch(''); setCategory('All'); setStatus('All'); setPage(1); }}
+            className="text-xs font-semibold text-[#ef4444] hover:underline"
+          >
+            Clear filters
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -106,18 +134,10 @@ export default function UsersPage() {
         >
           {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
         </select>
-        {(search || category !== 'All' || status !== 'All') && (
-          <button
-            onClick={() => { setSearch(''); setCategory('All'); setStatus('All'); setPage(1); }}
-            className="text-xs font-semibold text-[#ef4444] hover:underline"
-          >
-            Clear
-          </button>
-        )}
       </div>
 
       {/* Table card */}
-      <div className="bg-white rounded-xl border border-[#eaeaea] overflow-hidden">
+      <div className="bg-white rounded-2xl border border-[#f0f0f0] shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-16 text-[#9ca3af] text-sm">
             Loading entries…
@@ -146,10 +166,20 @@ export default function UsersPage() {
               </thead>
               <tbody>
                 {entries.map((e, i) => (
-                  <tr key={e.trackingID || i} className="border-b border-[#f5f5f5] last:border-0 hover:bg-[#fafafa] transition-colors duration-100">
+                  <tr key={e.trackingID || i} className="border-b border-[#f5f5f5] last:border-0 hover:bg-[#f9fffe] transition-colors duration-100">
                     <td className="px-3 py-2.5 text-[11px] text-[#9ca3af] tabular-nums">{start + i}</td>
                     <td className="px-3 py-2.5 font-mono text-[11px] text-[#9ca3af]">AOS-{e.trackingID}</td>
-                    <td className="px-3 py-2.5 font-medium text-[#1a1a1a]">{e.SPOC_name}</td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0"
+                          style={{ background: avatarColor(e.SPOC_name) }}
+                        >
+                          {avatarInitials(e.SPOC_name)}
+                        </div>
+                        <span className="font-medium text-[#1a1a1a] text-sm">{e.SPOC_name}</span>
+                      </div>
+                    </td>
                     <td className="px-3 py-2.5 text-[#6b7280] max-w-[160px] truncate">{e.subject ?? '—'}</td>
                     <td className="px-3 py-2.5">
                       <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${CAT_PILL[e.category ?? ''] ?? 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
@@ -159,7 +189,7 @@ export default function UsersPage() {
                     <td className="px-3 py-2.5 text-[11px] text-[#9ca3af] whitespace-nowrap">{formatDate(e.date)}</td>
                     <td className="px-3 py-2.5 font-mono text-[11px] text-[#6b7280]">{e.totalHours ?? '—'}</td>
                     <td className="px-3 py-2.5">
-                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${STATUS_BADGE[e.approvalStatus] ?? 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${STATUS_BADGE[e.approvalStatus] ?? 'bg-gray-100 text-gray-600'}`}>
                         {e.approvalStatus}
                       </span>
                     </td>

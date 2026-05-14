@@ -3,112 +3,123 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, FileText, CheckCircle, BarChart2, Settings,
-  ChevronLeft, ChevronRight, LogOut
+  HelpCircle, LogOut, Users, Download, Table2
 } from 'lucide-react';
 
-const NAV = [
-  { label: 'Dashboard',  icon: LayoutDashboard, href: '/',          badge: false },
-  { label: 'Approvals',  icon: CheckCircle,      href: '/approvals', badge: true  },
-  { label: 'Entries',    icon: FileText,          href: '/entries',   badge: false },
-  { label: 'Reports',    icon: BarChart2,         href: '/reports',   badge: false },
-  { label: 'Settings',   icon: Settings,          href: '/settings',  badge: false },
+const MENU_NAV = [
+  { label: 'Dashboard', icon: LayoutDashboard, href: '/' },
+  { label: 'Approvals', icon: CheckCircle, href: '/approvals', badge: true },
+  { label: 'Entries', icon: FileText, href: '/entries' },
+  { label: 'All Entries', icon: Table2, href: '/users' },
+  { label: 'Reports', icon: BarChart2, href: '/reports' },
+  { label: 'Team', icon: Users, href: '/settings' },
 ];
 
-interface SidebarProps { collapsed: boolean; onToggle: () => void; pendingCount: number; }
+const GENERAL_NAV = [
+  { label: 'Settings', icon: Settings, href: '/settings' },
+  { label: 'Help', icon: HelpCircle, href: '#' },
+  { label: 'Logout', icon: LogOut, href: '#' },
+];
 
-export default function Sidebar({ collapsed, onToggle, pendingCount }: SidebarProps) {
+interface SidebarProps {
+  pendingCount: number;
+}
+
+export default function Sidebar({ pendingCount }: SidebarProps) {
   const pathname = usePathname();
+
   return (
-    <aside
-      className="sidebar-transition flex-shrink-0 bg-[#0f172a] flex flex-col overflow-hidden relative"
-      style={{ width: collapsed ? 64 : 240 }}
-    >
+    <aside className="flex-shrink-0 bg-white flex flex-col h-full border-r border-[#eaeaea] w-[220px]">
       {/* Logo */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-white/[0.06] flex-shrink-0">
-        {!collapsed && (
-          <div className="flex items-center gap-2 overflow-hidden">
-            <div className="w-7 h-7 rounded-lg bg-[#2563eb] flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-xs font-bold">A</span>
-            </div>
-            <div className="overflow-hidden">
-              <div className="text-white font-semibold text-sm leading-tight">AOS Retail</div>
-              <div className="text-white/35 text-[10px] leading-tight">CPA / CMA</div>
-            </div>
+      <div className="h-14 flex items-center px-4 flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full bg-[#1a5d3a] flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-[10px] font-bold">A</span>
           </div>
-        )}
-        {collapsed && (
-          <div className="w-7 h-7 rounded-lg bg-[#2563eb] flex items-center justify-center mx-auto">
-            <span className="text-white text-xs font-bold">A</span>
-          </div>
-        )}
-        <button
-          onClick={onToggle}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="text-white/30 hover:text-white/80 hover:bg-white/[0.06] p-1.5 rounded-lg transition-colors duration-150 flex-shrink-0"
-        >
-          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-        </button>
+          <span className="text-[#1a1a1a] font-semibold text-sm leading-tight">AOS Retail</span>
+        </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-hidden">
-        {NAV.map(({ label, icon: Icon, href, badge }) => {
+      {/* MENU */}
+      <div className="px-4 mt-1">
+        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">Menu</span>
+      </div>
+      <nav className="px-2 py-1.5 space-y-0.5">
+        {MENU_NAV.map(({ label, icon: Icon, href, badge }) => {
           const active = pathname === href || (href !== '/' && pathname.startsWith(href));
           const count = badge ? pendingCount : 0;
           return (
             <Link
               key={href}
               href={href}
-              title={collapsed ? label : undefined}
               className={`
-                relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium
-                transition-colors duration-150 group min-h-[40px]
+                relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium
+                transition-colors duration-150 group min-h-[38px]
                 ${active
-                  ? 'bg-white/[0.08] text-white'
-                  : 'text-white/50 hover:text-white/90 hover:bg-white/[0.04]'
+                  ? 'bg-[#e8f5e9] text-[#1a5d3a]'
+                  : 'text-[#6b7280] hover:text-[#1a1a1a] hover:bg-[#f5f5f5]'
                 }
               `}
             >
-              {/* Active indicator bar */}
               {active && (
-                <span className="absolute left-0 top-2 bottom-2 w-0.5 bg-[#3b82f6] rounded-r-full" />
+                <span className="absolute left-0 top-2 bottom-2 w-[3px] bg-[#1a5d3a] rounded-r-full" />
               )}
-
-              <Icon size={17} className="flex-shrink-0" />
-
-              {!collapsed && <span className="flex-1 truncate">{label}</span>}
-
-              {/* Badge — visible when expanded */}
-              {!collapsed && badge && count > 0 && (
-                <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-[#f97316] text-white text-[10px] font-bold rounded-full animate-fade-in-scale">
-                  {count}
+              <Icon size={16} className="flex-shrink-0" strokeWidth={active ? 2.5 : 2} />
+              <span className="flex-1 truncate">{label}</span>
+              {badge && count > 0 && (
+                <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-[#1a5d3a] text-white text-[10px] font-bold rounded-full">
+                  {count > 99 ? '99+' : count}
                 </span>
-              )}
-
-              {/* Dot badge — visible when collapsed */}
-              {collapsed && badge && count > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#f97316] rounded-full" style={{ animation: 'pulse-dot 2s ease-in-out infinite' }} />
               )}
             </Link>
           );
         })}
       </nav>
 
-      {/* Divider */}
-      <div className="mx-3 h-px bg-white/[0.06]" />
+      {/* GENERAL */}
+      <div className="px-4 mt-2">
+        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9ca3af]">General</span>
+      </div>
+      <nav className="px-2 py-1.5 space-y-0.5">
+        {GENERAL_NAV.map(({ label, icon: Icon, href }) => {
+          const active = pathname === href;
+          return (
+            <Link
+              key={label}
+              href={href}
+              className={`
+                relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium
+                transition-colors duration-150 group min-h-[38px]
+                ${active
+                  ? 'bg-[#e8f5e9] text-[#1a5d3a]'
+                  : 'text-[#6b7280] hover:text-[#1a1a1a] hover:bg-[#f5f5f5]'
+                }
+              `}
+            >
+              <Icon size={16} className="flex-shrink-0" strokeWidth={active ? 2.5 : 2} />
+              <span className="flex-1 truncate">{label}</span>
+            </Link>
+          );
+        })}
+      </nav>
 
-      {/* User section */}
+      <div className="flex-1 min-h-[8px]" />
+
+      {/* Download CTA */}
       <div className="p-3">
-        <div className={`flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/[0.04] transition-colors duration-150 cursor-pointer ${collapsed ? 'justify-center' : ''}`}>
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#3b82f6] to-[#2563eb] flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ring-2 ring-white/10">
-            VB
-          </div>
-          {!collapsed && (
-            <div className="flex-1 overflow-hidden">
-              <div className="text-white text-xs font-semibold truncate">Vikram B</div>
-              <div className="text-white/35 text-[10px] truncate">Retail Ops Lead</div>
+        <div className="rounded-xl bg-[#1a5d3a] p-3 text-white relative overflow-hidden">
+          <div className="relative z-10">
+            <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center mb-2">
+              <Download size={12} />
             </div>
-          )}
+            <p className="text-xs font-semibold leading-snug">Download our Mobile App</p>
+            <p className="text-[10px] text-white/60 mt-0.5">Get easy in another way</p>
+            <button className="mt-2 w-full py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-[11px] font-semibold transition-colors">
+              Download
+            </button>
+          </div>
+          <div className="absolute -bottom-3 -right-3 w-16 h-16 rounded-full bg-white/5" />
+          <div className="absolute -top-4 -right-4 w-14 h-14 rounded-full bg-white/5" />
         </div>
       </div>
     </aside>
